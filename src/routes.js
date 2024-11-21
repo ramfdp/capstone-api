@@ -1,3 +1,5 @@
+const dummyDatabase = []; // Simulasi database pengguna
+
 const routes = [
     // Route untuk membuat akun
     {
@@ -12,7 +14,6 @@ const routes = [
                 }).code(400);
             }
 
-            const dummyDatabase = [];
             const userExists = dummyDatabase.find((user) => user.email === email);
 
             if (userExists) {
@@ -26,11 +27,12 @@ const routes = [
 
             return h.response({
                 message: 'Akun berhasil dibuat',
-                user: { email }, 
+                user: { email },
             }).code(201);
         },
     },
 
+    // Route untuk login
     {
         method: 'POST',
         path: '/login',
@@ -49,6 +51,74 @@ const routes = [
             }).code(401);
         },
     },
+
+    // Route lupa password
+    {
+        method: 'POST',
+        path: '/forgot-password',
+        handler: (request, h) => {
+            const { email } = request.payload;
+
+            if (!email) {
+                return h.response({
+                    message: 'Email wajib diisi',
+                }).code(400);
+            }
+
+            const user = dummyDatabase.find((user) => user.email === email);
+
+            if (!user) {
+                return h.response({
+                    message: 'Email tidak ditemukan',
+                }).code(404);
+            }
+
+            // Simulasi pembuatan token reset password
+            const resetToken = `reset-token-${Math.random().toString(36).substr(2, 10)}`;
+            user.resetToken = resetToken;
+
+            // Simulasi pengiriman email
+            const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+            console.log(`Email reset password terkirim ke ${email} dengan URL: ${resetUrl}`);
+
+            return h.response({
+                message: 'Tautan reset password telah dikirim ke email Anda',
+                resetUrl, // Hanya untuk debugging
+            }).code(200);
+        },
+    },
+
+    // Route reset password
+    {
+        method: 'POST',
+        path: '/reset-password',
+        handler: (request, h) => {
+            const { token, newPassword } = request.payload;
+
+            if (!token || !newPassword) {
+                return h.response({
+                    message: 'Token dan password baru wajib diisi',
+                }).code(400);
+            }
+
+            const user = dummyDatabase.find((user) => user.resetToken === token);
+
+            if (!user) {
+                return h.response({
+                    message: 'Token tidak valid atau sudah kedaluwarsa',
+                }).code(404);
+            }
+
+            user.password = newPassword;
+            delete user.resetToken; // Hapus token setelah digunakan
+
+            return h.response({
+                message: 'Password berhasil direset',
+            }).code(200);
+        },
+    },
+
+    // Route untuk Google OAuth
     {
         method: 'GET',
         path: '/auth/google',
@@ -59,6 +129,8 @@ const routes = [
             }).code(302);
         },
     },
+
+    // Callback untuk Google OAuth
     {
         method: 'GET',
         path: '/auth/google/callback',
@@ -70,6 +142,8 @@ const routes = [
             });
         },
     },
+
+    // Route untuk Apple OAuth
     {
         method: 'GET',
         path: '/auth/apple',
@@ -80,6 +154,8 @@ const routes = [
             }).code(302);
         },
     },
+
+    // Callback untuk Apple OAuth
     {
         method: 'GET',
         path: '/auth/apple/callback',
